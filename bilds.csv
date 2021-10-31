@@ -1,0 +1,10 @@
+﻿name;type;free_height;volume;coef_a;coef_n;coef_beta;ch_heat;coef_inf;load_h
+UABZ;administrative;3,2;23339;1,3;8;1,06;;;
+SABZ;administrative;3,2;23940;1,3;8;1,06;;;
+ZY;administrative; 3,6 ;35524;1,85;6;1,06;;;
+CZL;administrative; 3,7 ;20643;1,3;8;1,06;;;
+IK;administrative; 4,3 ;93367,5504;1,3;8;1,06;;;
+m_24;manufactory; 8,8 ;14940;1,3;8;1,06;;;
+abz_24;administrative; 3,8 ;91641,6;1,3;8;1,06;;;
+m_202;manufactory; 20,5 ;524888,5416;1,3;8;1,06;;;
+m_28;manufactory; 23,0 ;475105,2;1,3;8;1,06;;;
