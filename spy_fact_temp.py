@@ -27,19 +27,24 @@ ctx.verify_mode = ssl.CERT_NONE
 # );
 # ''')
 
-# currentMonth = datetime.now().strftime('%B')
-# currentYear = datetime.now().strftime('%Y')
+currentMonth = datetime.now().strftime('%B')
+currentMonth = "October"
+currentYear = datetime.now().strftime('%Y')
 # "http://weatherarchive.ru/Temperature/Saint%20Petersburg/October-2021"
-# startUrl = "http://weatherarchive.ru/Temperature/Saint%20Petersburg/"
-# url = startUrl + currentMonth + "-" + currentYear
+startUrl = "http://weatherarchive.ru/Temperature/Saint%20Petersburg/"
+url = startUrl + currentMonth + "-" + currentYear
 # html = urlopen(url, context=ctx).read()
-url = "C:\Users\salin_da\Desktop\DS\factory-heat-master\other\htmlTest.html"
+# url = 'C:\Users\susalin\Desktop\DS\Factory_heat\other\htmlTest.html'
 html = urlopen(url, context=ctx).read()
 soup = BeautifulSoup(html, "html.parser")
-tags = soup('td')
-for tag in tags:
-#     # Look at the parts of a tag
-#     print('TAG:', tag)
-#     print('URL:', tag.get('href', None))
-    print('Contents:', tag.contents[0])
-#     print('Attrs:', tag.attrs)
+
+table_tag = soup.table[2].contents[0]
+print(table_tag)
+# for tag in tags:
+# #     # Look at the parts of a tag
+    # print('--->', tag.attrs)
+#     # print('URL:', tag.get('td'))
+#     # print(tag.contents[0])
+# #     print('Attrs:', tag.attrs)
+
+# if????
