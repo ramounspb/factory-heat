@@ -51,6 +51,8 @@ cur = conn.cursor()
 
 
 
+
+
 def check_last_date():
     #возвращаем дату последнего занесения данных в таблицу Calc_Heat_d
     cur.execute("SELECT DISTINCT max(date) FROM Calc_Heat_d")
@@ -91,13 +93,27 @@ def check_change_month():
     else:
         return change_month_dict
 
-date_time = datetime.now()
-# dict = parse_url(date_time) #try-expect
-change_month_dict = check_change_month()
 
-url = "http://weatherarchive.ru/Temperature/Saint%20Petersburg/October-2021"
+
+
+date_time = datetime.now()
+# dict = parse_url(date_time)
 dictTest = {'1 октября':'+8.25°C', '2 октября':'+9.75°C', '3 октября':'+8.88°C', '4 октября':'+7.88°C', '5 октября':'+6.88°C', '6 октября':'+5.88°C', '7 октября':'+4.88°C', '8 октября':'+3.88°C'}
-dictTest.update(change_month_dict) #если произошло изменение месяца, добавляем инф в общий дикт
+#dictTest = {}
+if len(dictTest) > 0:
+    print("==Temperatures for the current month have been successfully parsed==")
+    change_month_dict = check_change_month()
+    if len(change_month_dict) > 0:
+        print("==Change of the month. Temperatures have been successfully parsed==")
+        dictTest.update(change_month_dict) #если произошло изменение месяца, добавляем инф в общий дикт
+    else:
+        print("==The month change did not happen==")
+
+else:
+    print("==Parsing FAILED. Manual input==")
+    manual_input()
+
+print(dictTest)
 
 def clear_from_url (dict):
 #готовим данные с сайта для занесения в таблицу Calc_Heat_d
@@ -124,6 +140,7 @@ def clear_from_url (dict):
         day = convert_date(day)
         temp = convert_temp(temp)
         clear_data[day] = temp
+    print("==Data have been successfully cleared==")
     return clear_data
 
 def cut_clear_date(clear_data):
@@ -134,7 +151,12 @@ def cut_clear_date(clear_data):
     for k, v in clear_data.items():
         if time.mktime(datetime.strptime(k, "%d/%m/%Y").timetuple()) > last_date:
             clear_data_new[k] = v
-    return clear_data_new
+    if len(clear_data_new) >0:
+        print("==Data have been successfully cut==")
+        return clear_data_new
+    else:
+        print("==NO data to add to DB==")
+        exit()
 
 clear_data = clear_from_url(dictTest)
 final_data = cut_clear_date(clear_data)
