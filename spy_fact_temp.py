@@ -2,16 +2,16 @@ import sqlite3
 import locale
 # locale.setlocale(locale.LC_ALL, 'ru_RU')
 from urllib.request import urlopen
-from bs4 import BeautifulSoup
 import ssl
 from datetime import datetime, timedelta
 import time
+import pandas as pd
 
 
-## Ignore SSL certificate errors
-# ctx = ssl.create_default_context()
-# ctx.check_hostname = False
-# ctx.verify_mode = ssl.CERT_NONE
+# Ignore SSL certificate errors
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
 
 conn = sqlite3.connect('factoryheatdb.sqlite')
 cur = conn.cursor()
@@ -28,30 +28,16 @@ cur = conn.cursor()
 # ''')
 
 
-# def parse_url(date_time):
-    # currentMonth = date_time.strftime('%B')
-    # currentMonth = "October"
-    # currentYear = datetime.now().strftime('%Y')
-    # # "http://weatherarchive.ru/Temperature/Saint%20Petersburg/October-2021"
-    # startUrl = "http://weatherarchive.ru/Temperature/Saint%20Petersburg/"
-    # url = startUrl + currentMonth + "-" + currentYear
-    # html = urlopen(url, context=ctx).read()
-    # soup = BeautifulSoup(html, "html.parser")
-    # table_tag = soup.table[2].contents[0]
-    # print(table_tag)
-    # # for tag in tags:
-    # # #     # Look at the parts of a tag
-    #     # print('--->', tag.attrs)
-    # #     # print('URL:', tag.get('td'))
-    # #     # print(tag.contents[0])
-    # # #     print('Attrs:', tag.attrs)
-    #
-    # # if????
-#если не парсится недоступен, то внести от руки
-
-
-
-
+def parse_url(date_time):
+    Month = date_time.strftime('%B')
+    Year = datetime.now().strftime('%Y')
+    # "http://weatherarchive.ru/Temperature/Saint%20Petersburg/October-2021"
+    startUrl = "http://weatherarchive.ru/Temperature/Saint%20Petersburg/"
+    url = startUrl + Month + "-" + Year
+    table = pd.read_html(url)[2]
+    table = table.drop(table.columns[[2,3,4]], axis=1)
+    dictTest = pd.Series(table.Среднесуточнаятемпература.values,index=table.Деньмесяца).to_dict()
+    return dictTest
 
 def check_last_date():
     #возвращаем дату последнего занесения данных в таблицу Calc_Heat_d
@@ -77,8 +63,6 @@ def manual_input():
                 print("Введено некорректное значение температуры. В качестве разделителя используйте точку.")
             else:
                 break
-# куда внести эту функцию??
-
 
 def check_change_month():
     #создаем словарь, если произошло изменение месяца (дикт за "прошлый" месяц)
@@ -87,33 +71,27 @@ def check_change_month():
     last = datetime.strptime(last_date, '%d/%m/%Y')
     change_month_dict = {}
     if now.strftime('%m') > last.strftime('%m'):
-        # change_month_dict = parse_url(last)
-        change_month_dict = {'28 сентября':'+18.25°C','29 сентября':'+18.25°C','30 сентября':'+18.25°C'}
+        change_month_dict = parse_url(last)
+        # change_month_dict = {'28 сентября':'+18.25°C','29 сентября':'+18.25°C','30 сентября':'+18.25°C'}
         return change_month_dict
     else:
         return change_month_dict
 
-
-
-
-date_time = datetime.now()
-# dict = parse_url(date_time)
-dictTest = {'1 октября':'+8.25°C', '2 октября':'+9.75°C', '3 октября':'+8.88°C', '4 октября':'+7.88°C', '5 октября':'+6.88°C', '6 октября':'+5.88°C', '7 октября':'+4.88°C', '8 октября':'+3.88°C'}
+dict = parse_url(datetime.now())
+# dictTest = {'1 октября':'+8.25°C', '2 октября':'+9.75°C', '3 октября':'+8.88°C', '4 октября':'+7.88°C', '5 октября':'+6.88°C', '6 октября':'+5.88°C', '7 октября':'+4.88°C', '8 октября':'+3.88°C'}
 #dictTest = {}
-if len(dictTest) > 0:
+if len(dict) > 0:
     print("==Temperatures for the current month have been successfully parsed==")
     change_month_dict = check_change_month()
     if len(change_month_dict) > 0:
         print("==Change of the month. Temperatures have been successfully parsed==")
-        dictTest.update(change_month_dict) #если произошло изменение месяца, добавляем инф в общий дикт
+        dict.update(change_month_dict) #если произошло изменение месяца, добавляем инф в общий дикт
     else:
         print("==The month change did not happen==")
 
 else:
     print("==Parsing FAILED. Manual input==")
     manual_input()
-
-print(dictTest)
 
 def clear_from_url (dict):
 #готовим данные с сайта для занесения в таблицу Calc_Heat_d
@@ -126,7 +104,7 @@ def clear_from_url (dict):
             if rus_month == key:
                 month_num = val
                 break
-        yr = date_time.strftime('%Y')
+        yr = datetime.now().strftime('%Y')
         day = day_rus[0] +'/'+ month_num +'/'+ yr
         return day
 
@@ -158,8 +136,10 @@ def cut_clear_date(clear_data):
         print("==NO data to add to DB==")
         exit()
 
-clear_data = clear_from_url(dictTest)
+clear_data = clear_from_url(dict)
 final_data = cut_clear_date(clear_data)
+
+print(final_data)
 
 def calc_heat(type, load_h, temp_out):
 #вычисляем Гкал на основании температуры наружнего воздуха с сайта
