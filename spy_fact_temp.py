@@ -1,6 +1,5 @@
 import sqlite3
 import locale
-# locale.setlocale(locale.LC_ALL, 'ru_RU')
 from urllib.request import urlopen
 import ssl
 from datetime import datetime, timedelta
@@ -16,16 +15,15 @@ ctx.verify_mode = ssl.CERT_NONE
 conn = sqlite3.connect('factoryheatdb.sqlite')
 cur = conn.cursor()
 
-##добавил IF NOT EXISTS
-# cur.executescript('''
-# CREATE TABLE IF NOT EXISTS Calc_Heat_d(
-#     id  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-#     bildings_id INTEGER NOT NULL,
-#     date DATE,
-#     temp_out INTEGER,
-#     calc_heat_d INTEGER
-# );
-# ''')
+cur.executescript('''
+CREATE TABLE IF NOT EXISTS Calc_Heat_d(
+    id  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+    bildings_id INTEGER NOT NULL,
+    date DATE,
+    temp_out INTEGER,
+    calc_heat_d INTEGER
+);
+''')
 
 
 def parse_url(date_time):
@@ -43,22 +41,23 @@ def check_last_date():
     #возвращаем дату последнего занесения данных в таблицу Calc_Heat_d
     cur.execute("SELECT DISTINCT max(date) FROM Calc_Heat_d")
     last_date = cur.fetchall()
-    last_date = last_date[0][0]
+    last_date = datetime.strptime(last_date[0][0], '%Y-%m-%d %H:%M:%S')
+    print("last",last_date)
+    if last_date is None:
+        last_date = datetime.now() - timedelta(days=1)
     return last_date
 
 def manual_input():
     #в случае ошибки парсинга сайта, внести данные по температурам вручную
     now = datetime.now()
-    last_date = check_last_date()
-    last = datetime.strptime(last_date, '%d/%m/%Y')
+    last = check_last_date()
     manual_dict = {}
     while last < (now - timedelta(days=2)):
         last = last + timedelta(days=1)
-        last_str = last.strftime('%d/%m/%Y')
         while True:
-            manual_temp = input('Введите температуру наружнего воздуха ' + last_str + " :")
+            manual_temp = input('Введите температуру наружнего воздуха ' + last + " :")
             try:
-                manual_dict[last_str] = float(manual_temp)
+                manual_dict[last] = float(manual_temp)
             except ValueError:
                 print("Введено некорректное значение температуры. В качестве разделителя используйте точку.")
             else:
@@ -67,19 +66,15 @@ def manual_input():
 def check_change_month():
     #создаем словарь, если произошло изменение месяца (дикт за "прошлый" месяц)
     now = datetime.now()
-    last_date = check_last_date()
-    last = datetime.strptime(last_date, '%d/%m/%Y')
+    last = check_last_date()
     change_month_dict = {}
     if now.strftime('%m') > last.strftime('%m'):
         change_month_dict = parse_url(last)
-        # change_month_dict = {'28 сентября':'+18.25°C','29 сентября':'+18.25°C','30 сентября':'+18.25°C'}
         return change_month_dict
     else:
         return change_month_dict
 
 dict = parse_url(datetime.now())
-# dictTest = {'1 октября':'+8.25°C', '2 октября':'+9.75°C', '3 октября':'+8.88°C', '4 октября':'+7.88°C', '5 октября':'+6.88°C', '6 октября':'+5.88°C', '7 октября':'+4.88°C', '8 октября':'+3.88°C'}
-#dictTest = {}
 if len(dict) > 0:
     print("==Temperatures for the current month have been successfully parsed==")
     change_month_dict = check_change_month()
@@ -105,7 +100,8 @@ def clear_from_url (dict):
                 month_num = val
                 break
         yr = datetime.now().strftime('%Y')
-        day = day_rus[0] +'/'+ month_num +'/'+ yr
+        day = yr +'-'+ month_num +'-'+ day_rus[0]
+        day = datetime.strptime(day, '%Y-%m-%d')
         return day
 
     def convert_temp(temp):
@@ -124,12 +120,12 @@ def clear_from_url (dict):
 def cut_clear_date(clear_data):
 #убираем из clear_data даты и температуры, которые уже есть в таблице Calc_Heat_d
     last_date = check_last_date()
-    last_date = time.mktime(datetime.strptime(last_date, "%d/%m/%Y").timetuple())
+    last_date = time.mktime(last_date.timetuple())
     clear_data_new = {}
     for k, v in clear_data.items():
-        if time.mktime(datetime.strptime(k, "%d/%m/%Y").timetuple()) > last_date:
+        if time.mktime(k.timetuple()) > last_date:
             clear_data_new[k] = v
-    if len(clear_data_new) >0:
+    if len(clear_data_new) > 0:
         print("==Data have been successfully cut==")
         return clear_data_new
     else:
@@ -160,9 +156,9 @@ for day, temp_out in final_data.items():
         type = bild[2]
         load_h = bild[10]
         calc_heat_d = round(calc_heat(type, load_h, temp_out),5)
-        # cur.execute('''INSERT OR IGNORE INTO Calc_Heat_d
-        #     (bildings_id, date, temp_out, calc_heat_d)
-        #     VALUES (?, ?, ?, ?)''',
-        #     (bildings_id, day, temp_out, calc_heat_d) )
+        cur.execute('''INSERT OR IGNORE INTO Calc_Heat_d
+            (bildings_id, date, temp_out, calc_heat_d)
+            VALUES (?, ?, ?, ?)''',
+            (bildings_id, day, temp_out, calc_heat_d) )
 conn.commit()
 conn.close()
