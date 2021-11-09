@@ -4,8 +4,6 @@ from urllib.request import urlopen
 import ssl
 from datetime import datetime, timedelta
 import time
-import pandas as pd
-
 
 # Ignore SSL certificate errors
 ctx = ssl.create_default_context()
@@ -25,7 +23,6 @@ CREATE TABLE IF NOT EXISTS Calc_Heat_d(
 );
 ''')
 
-
 def parse_url(date_time):
     Month = date_time.strftime('%B')
     Year = datetime.now().strftime('%Y')
@@ -42,26 +39,26 @@ def check_last_date():
     cur.execute("SELECT DISTINCT max(date) FROM Calc_Heat_d")
     last_date = cur.fetchall()
     last_date = datetime.strptime(last_date[0][0], '%Y-%m-%d %H:%M:%S')
-    print("last",last_date)
     if last_date is None:
         last_date = datetime.now() - timedelta(days=1)
     return last_date
 
 def manual_input():
-    #в случае ошибки парсинга сайта, внести данные по температурам вручную
+    #в случае ошибки парсинга сайта/Pandas, внести данные по температурам вручную
     now = datetime.now()
     last = check_last_date()
     manual_dict = {}
     while last < (now - timedelta(days=2)):
         last = last + timedelta(days=1)
         while True:
-            manual_temp = input('Введите температуру наружнего воздуха ' + last + " :")
+            manual_temp = input('Введите температуру наружнего воздуха ' + last.strftime('%Y-%m-%d') + " :")
             try:
                 manual_dict[last] = float(manual_temp)
             except ValueError:
                 print("Введено некорректное значение температуры. В качестве разделителя используйте точку.")
             else:
                 break
+    return manual_dict
 
 def check_change_month():
     #создаем словарь, если произошло изменение месяца (дикт за "прошлый" месяц)
@@ -73,20 +70,6 @@ def check_change_month():
         return change_month_dict
     else:
         return change_month_dict
-
-dict = parse_url(datetime.now())
-if len(dict) > 0:
-    print("==Temperatures for the current month have been successfully parsed==")
-    change_month_dict = check_change_month()
-    if len(change_month_dict) > 0:
-        print("==Change of the month. Temperatures have been successfully parsed==")
-        dict.update(change_month_dict) #если произошло изменение месяца, добавляем инф в общий дикт
-    else:
-        print("==The month change did not happen==")
-
-else:
-    print("==Parsing FAILED. Manual input==")
-    manual_input()
 
 def clear_from_url (dict):
 #готовим данные с сайта для занесения в таблицу Calc_Heat_d
@@ -103,12 +86,11 @@ def clear_from_url (dict):
         day = yr +'-'+ month_num +'-'+ day_rus[0]
         day = datetime.strptime(day, '%Y-%m-%d')
         return day
-
     def convert_temp(temp):
     #"чистим" температуру с сайта
+        temp = temp.replace("−", "-")
         temp = float(temp[:-2])
         return temp
-
     clear_data = {}
     for day, temp in dict.items():
         day = convert_date(day)
@@ -116,6 +98,26 @@ def clear_from_url (dict):
         clear_data[day] = temp
     print("==Data have been successfully cleared==")
     return clear_data
+
+try:
+    import pandas as pd
+    dict = parse_url(datetime.now())
+    if len(dict) > 0:
+        print("==Temperatures for the current month have been successfully parsed==")
+        change_month_dict = check_change_month()
+        if len(change_month_dict) > 0:
+            print("==Change of the month. Temperatures have been successfully parsed==")
+            dict.update(change_month_dict) #если произошло изменение месяца, добавляем инф в общий дикт
+        else:
+            print("==The month change did not happen==")
+        clear_data = clear_from_url(dict)
+    else:
+        print("==Parsing FAILED. Manual input==")
+        dict = manual_input()
+
+except ImportError:
+    print("==Ошибка загрузки библиотеки Pandas==")
+    clear_data = manual_input()
 
 def cut_clear_date(clear_data):
 #убираем из clear_data даты и температуры, которые уже есть в таблице Calc_Heat_d
@@ -132,10 +134,7 @@ def cut_clear_date(clear_data):
         print("==NO data to add to DB==")
         exit()
 
-clear_data = clear_from_url(dict)
 final_data = cut_clear_date(clear_data)
-
-print(final_data)
 
 def calc_heat(type, load_h, temp_out):
 #вычисляем Гкал на основании температуры наружнего воздуха с сайта
