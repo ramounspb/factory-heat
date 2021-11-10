@@ -123,9 +123,12 @@ def cut_clear_date(clear_data):
 #убираем из clear_data даты и температуры, которые уже есть в таблице Calc_Heat_d
     last_date = check_last_date()
     last_date = time.mktime(last_date.timetuple())
+    now = datetime.now()
+    now = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    now = time.mktime(now.timetuple())
     clear_data_new = {}
     for k, v in clear_data.items():
-        if time.mktime(k.timetuple()) > last_date:
+        if time.mktime(k.timetuple()) > last_date and time.mktime(k.timetuple()) < now:
             clear_data_new[k] = v
     if len(clear_data_new) > 0:
         print("==Data have been successfully cut==")
