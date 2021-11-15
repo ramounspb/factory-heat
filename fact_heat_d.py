@@ -62,10 +62,11 @@ def read_sheet(bildNum, shName,last_date):
     def drop_extra(df,last_date):
         df = df.drop(df.columns[[0]], axis=1)
         df = df.drop(range(0,9))
-        df = df.drop(range(40,50))
+        df = df.drop(df.iloc[-10:,:].index)
         df.columns=['date',"fact_heat_all",'mass_in','mass_out',
         'mass_delta','temp_in','temp_out','temp_delta','press_in',
         'press_out','sensor_work_time','sensor_off_time']
+
         for index, row in df.iterrows():
             if row['date'] <= last_date:
                 df = df.drop(index)
@@ -95,8 +96,6 @@ def read_sheet(bildNum, shName,last_date):
             df['bildings_id'] = bildNum
             df.to_sql('Fact_Heat_d', con = conn, if_exists='append', index=False)
             print('Данные с ' + shName + ' загружены')
-
-#проверить работоспособность на ноябре и тд без одной даты последней
 
 last_date = check_last_date()
 cur.execute("SELECT id,name FROM Bildings")
