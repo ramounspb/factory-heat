@@ -58,9 +58,9 @@ def read_sheet(bildNum, shName,last_date):
 
     if bildNum == 3:
         #по ЗУ в выгрузке две вкладки, их нужно суммировать
-        df1 = pd.read_excel("./other/Посуточная ведомость1.xlsx",sheet_name='КМ-5 ИТП1 ЗУпр')
+        df1 = pd.read_excel("./input/Посуточная ведомость1.xlsx",sheet_name='КМ-5 ИТП1 ЗУпр')
         df1 = drop_extra(df1,last_date)
-        df2 = pd.read_excel("./other/Посуточная ведомость1.xlsx",sheet_name='КМ-5 ИТП2 ЗУпр')
+        df2 = pd.read_excel("./input/Посуточная ведомость1.xlsx",sheet_name='КМ-5 ИТП2 ЗУпр')
         df2 = drop_extra(df2,last_date)
         df3 = pd.concat([df1, df2]).groupby(['date'],as_index=False).sum()
         if len(df3.index) == 0:
@@ -72,7 +72,7 @@ def read_sheet(bildNum, shName,last_date):
             print('Данные с ' + shName + ' загружены')
 
     else:
-        df = pd.read_excel("./other/Посуточная ведомость1.xlsx",sheet_name=shName)
+        df = pd.read_excel("./input/Посуточная ведомость1.xlsx",sheet_name=shName)
         df = drop_extra(df,last_date)
         if len(df.index) == 0:
             print('По ' + shName + ' новые данные отсутствуют')
