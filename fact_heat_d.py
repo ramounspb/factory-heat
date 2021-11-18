@@ -6,27 +6,6 @@ import pandas as pd
 conn = sqlite3.connect('factoryheatdb.sqlite')
 cur = conn.cursor()
 
-# cur.executescript('''
-# DROP TABLE IF EXISTS Fact_Heat_d;
-# CREATE TABLE Fact_Heat_d(
-#     id  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-#     bildings_id INTEGER NOT NULL,
-#     date DATE,
-#     fact_heat_all INTEGER,
-#     mass_in INTEGER,
-#     mass_out INTEGER,
-#     mass_delta INTEGER,
-#     temp_in INTEGER,
-#     temp_out INTEGER,
-#     temp_delta INTEGER,
-#     press_in INTEGER,
-#     press_out INTEGER,
-#     sensor_work_time INTEGER,
-#     sensor_off_time INTEGER
-#     fact_heat_ch INTEGER
-# );
-# ''')
-
 cur.executescript('''
 CREATE TABLE IF NOT EXISTS Fact_Heat_d(
     id  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
@@ -71,9 +50,14 @@ def read_sheet(bildNum, shName,last_date):
             if row['date'] <= last_date:
                 df = df.drop(index)
             else:
-                continue
+                if pd.isna(row['fact_heat_all']):
+                    df = df.drop(index)
+                else:
+                    continue
         return df
+
     if bildNum == 3:
+        #по ЗУ в выгрузке две вкладки, их нужно суммировать
         df1 = pd.read_excel("./other/Посуточная ведомость1.xlsx",sheet_name='КМ-5 ИТП1 ЗУпр')
         df1 = drop_extra(df1,last_date)
         df2 = pd.read_excel("./other/Посуточная ведомость1.xlsx",sheet_name='КМ-5 ИТП2 ЗУпр')
@@ -105,6 +89,5 @@ for bild in bilds:
     name = bild[1]
     shName = "КМ-5 " + name
     read_sheet(bildNum, shName,last_date)
-
 conn.commit()
 conn.close()
