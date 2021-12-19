@@ -4,6 +4,7 @@ from urllib.request import urlopen
 import ssl
 from datetime import datetime, timedelta
 import time
+import pandas as pd
 
 # Ignore SSL certificate errors
 ctx = ssl.create_default_context()
