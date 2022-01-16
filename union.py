@@ -65,12 +65,15 @@ JOIN Calc_Heat_d
     AND Calc_Heat_d.date = CH_Fact_Heat_d.date
 JOIN Bildings
     ON CH_Fact_Heat_d.bildings_id = Bildings.id
-WHERE Bildings.id = 7
+WHERE Bildings.id = 4
 ORDER BY bild, datetime
 ''', conn)
 df = pd.DataFrame(sql_query, columns = ['bildname', 'datetime','temp',  "fact", 'calc'])
-print(df)
+# print(df)
 
 fig = px.scatter(x=df['temp'], y=df['fact'])
-fig.add_trace(go.Scatter(x=df['temp'], y=df['calc'],name = 'calc = f(temp)'))
+fig.add_trace(go.Scatter(x=df['temp'], y=df['calc'],name = '$$calc = f(temp)$$'))
 fig.show()
+
+corr_temp_ch = df["fact"].corr(df['temp'])
+print(corr_temp_ch)
